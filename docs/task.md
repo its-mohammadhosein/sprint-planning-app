@@ -27,12 +27,15 @@ Keep the app runnable after each step.
    - [x] Configured Tailwind v4 (`main/src/app/globals.css` `@theme`) with those tokens — color tokens (`primary`, `danger`, `warning`, `success`, `priority-*`, etc.), radii (`sm`/`md`/`lg` = 4/6/10px), system font stack. Removed the default Geist font loading in `layout.tsx` to match the prototype's system-font look. Verified with `pnpm build`.
    - [ ] Steps 3-7 below should match the prototype's layout/look (screenshots in `docs/design-reference/`) per the prototype-wins-on-looks rule in `main/DECISIONS.md`.
 
-2. **Auth: Redis-backed sessions**
-   - `src/lib/redis.ts` (ioredis singleton), `src/lib/session.ts` (`createSession`, `getSession`, `destroySession`, `destroyAllUserSessions`).
-   - `src/lib/auth.ts` with `requireUser()` / `requireAdmin()`.
-   - `middleware.ts`: cheap cookie-exists check only.
-   - `/login`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`.
-   - Login rate limiting (5 failed/15min per email+IP), bcrypt cost 12, CSRF Origin check on mutations.
+2. **Auth: Redis-backed sessions** — done
+   - [x] `src/lib/redis.ts` (ioredis singleton), `src/lib/session.ts` (`createSession`, `getSession`, `destroySession`, `destroyAllUserSessions`), `src/lib/constants.ts` (cookie name, kept dependency-free for Edge middleware).
+   - [x] `src/lib/auth.ts` with `requireUser()`/`requireAdmin()` (throw, for route handlers) and `requireUserForPage()`/`requireAdminForPage()` (redirect, for server-component pages).
+   - [x] `src/middleware.ts`: cheap cookie-exists check only (protects all pages except `/login`; `/api/*` excluded — API routes do their own auth and return JSON).
+   - [x] `/login` page (matches prototype screenshots 29-31), `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`.
+   - [x] Login rate limiting (5 failed/15min per email+IP via Redis, `src/lib/rate-limit.ts`), bcrypt cost 12 (`src/lib/password.ts`), CSRF Origin check on all mutating requests (`src/lib/csrf.ts`).
+   - [x] Minimal protected `/` and `/403` pages to prove the auth flow end-to-end ahead of the real Sprint view (step 4).
+   - [x] Verified manually: login sets `sess:<id>` in Redis with TTL + `user_sessions:<id>` set, `/api/auth/me` returns the user, middleware redirects unauthenticated requests (307), wrong-Origin and missing-Origin requests are rejected (403), 5 failed logins trigger 429 rate limiting, logout clears the Redis session and cookie.
+   - Note: disabled Next 16's `cacheComponents`/`partialPrefetching` experimental flags in `next.config.ts` — they require every dynamic read (cookies, searchParams) to be Suspense-wrapped or cached, which fights a fully session-gated app with no static-generation benefit. See `main/DECISIONS.md`.
 
 3. **Admin CRUD**
    - `/admin/teams`, `/admin/users`, `/admin/sprints` pages + `/api/admin/*` routes (admin-only).
