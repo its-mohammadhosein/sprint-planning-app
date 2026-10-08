@@ -22,14 +22,18 @@ main/build
 .DS_Store
 *.pem
 
+# design reference (prototype export + screenshots) - not tracked for now
+/docs/design-reference
+
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (.env.example is intentionally tracked as a template)
 .env*
+!.env.example
 
 # vercel
 .vercel

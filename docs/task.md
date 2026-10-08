@@ -4,15 +4,28 @@ Source: [docs/README.md](docs/README.md) (section 13, "Build Order") and section
 
 Keep the app runnable after each step.
 
+**Note:** the app lives in [main/](main/) (a Next.js app), with the root repo also holding [docs/](docs/). Paths below (`src/`, `prisma/`, etc.) are relative to `main/`.
+
 ## Steps
 
 1. **Project setup & data layer**
-   - Init Next.js (App Router) + TypeScript project.
-   - Add `docker-compose.yml` (Postgres 16 + Redis 7, named volumes).
-   - Write Prisma schema matching [docs/schema.sql](docs/schema.sql) (teams, users, sprints, tasks, enums, indexes, `updated_at` trigger behavior via `@updatedAt`).
-   - Run initial migration (`npx prisma migrate dev`).
-   - Write `prisma/seed.ts` (4 teams, 1 admin, ~8 users, 3 sprints, ~30 tasks incl. Backlog).
-   - Add `.env.example` and `DECISIONS.md`.
+   - [x] Init Next.js (App Router) + TypeScript project — scaffolded in `main/`.
+   - [x] Install dependencies: `prisma`, `@prisma/client`, `ioredis`, `bcrypt`, `zod`, `@tanstack/react-table`, `exceljs`, `csv-stringify`.
+   - [x] Git repo initialized at root, pushed to `origin/main`.
+   - [x] Add `docker-compose.yml` (Postgres 16 + Redis 7, named volumes; Postgres host port `5433` to avoid a local conflict — see `main/DECISIONS.md`).
+   - [x] Write Prisma schema matching [docs/schema.sql](docs/schema.sql) (teams, users, sprints, tasks, enums, indexes, `updated_at` via `@updatedAt`) — `main/prisma/schema.prisma`.
+   - [x] Write `prisma/seed.ts` (4 teams, 1 admin, 8 sample users, 3 sprints, 30 sample tasks incl. Backlog) — needs `tsx` added as a dev dependency to run.
+   - [x] Add `.env.example` and `DECISIONS.md`.
+   - [x] Install dependencies via pnpm: `prisma`, `@prisma/client` (pinned to stable `6.19.3` — Prisma 7+ dropped the classic `url = env("DATABASE_URL")` schema pattern in favor of `prisma.config.ts` + driver adapters, see `main/DECISIONS.md`), `ioredis`, `bcrypt`, `@types/bcrypt`, `zod`, `@tanstack/react-table`, `exceljs`, `csv-stringify`, `tsx`.
+   - [x] Run initial migration (`npx prisma migrate dev --name init`) against `docker compose up -d` Postgres/Redis.
+   - [x] Run `npx prisma db seed` — verified in Postgres: 4 teams, 9 users, 3 sprints, 30 tasks (6 in Backlog).
+
+   **Step 1 complete.** App is runnable: `docker compose up -d && pnpm dev` (run from `main/`).
+
+   **Design reference setup (done, ahead of visual work in steps 2-7):**
+   - [x] Extracted design tokens from `docs/design-reference/Sprint Planner.dc.html`'s `<style>` block + inline styles into `docs/design-reference/TOKENS.md` (colors incl. exact priority-badge hexes, typography, spacing, radii, sizing, exact copy/labels), cross-checked against the 31 reference screenshots.
+   - [x] Configured Tailwind v4 (`main/src/app/globals.css` `@theme`) with those tokens — color tokens (`primary`, `danger`, `warning`, `success`, `priority-*`, etc.), radii (`sm`/`md`/`lg` = 4/6/10px), system font stack. Removed the default Geist font loading in `layout.tsx` to match the prototype's system-font look. Verified with `pnpm build`.
+   - [ ] Steps 3-7 below should match the prototype's layout/look (screenshots in `docs/design-reference/`) per the prototype-wins-on-looks rule in `main/DECISIONS.md`.
 
 2. **Auth: Redis-backed sessions**
    - `src/lib/redis.ts` (ioredis singleton), `src/lib/session.ts` (`createSession`, `getSession`, `destroySession`, `destroyAllUserSessions`).
