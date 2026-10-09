@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog } from "@/components/Dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RowMenu } from "@/components/RowMenu";
 import { useToast } from "@/components/ToastProvider";
 import { getSprintStatus, SPRINT_STATUS_STYLES } from "@/lib/sprint-status";
+import { sprintFormSchema, sprintFormValuesToApiBody, type SprintFormValues } from "@/lib/validation/admin";
 
 type Sprint = {
   id: number;
@@ -34,34 +37,44 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
   const { showToast } = useToast();
 
   const [formSprint, setFormSprint] = useState<Sprint | "new" | null>(null);
-  const [name, setName] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<Sprint | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  function openCreate() {
-    setName("");
-    setStartDate("");
-    setEndDate("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<SprintFormValues>({
+    resolver: zodResolver(sprintFormSchema),
+    defaultValues: { name: "", startDate: "", endDate: "" },
+  });
+
+  useEffect(() => {
+    if (formSprint === null) return;
+    reset(
+      formSprint === "new"
+        ? { name: "", startDate: "", endDate: "" }
+        : {
+            name: formSprint.name,
+            startDate: toDateInputValue(formSprint.startDate),
+            endDate: toDateInputValue(formSprint.endDate),
+          }
+    );
     setFormError(null);
+  }, [formSprint, reset]);
+
+  function openCreate() {
     setFormSprint("new");
   }
 
   function openEdit(sprint: Sprint) {
-    setName(sprint.name);
-    setStartDate(toDateInputValue(sprint.startDate));
-    setEndDate(toDateInputValue(sprint.endDate));
-    setFormError(null);
     setFormSprint(sprint);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
+  async function onSubmit(values: SprintFormValues) {
     setFormError(null);
 
     const isNew = formSprint === "new";
@@ -71,13 +84,12 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
       const res = await fetch(url, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, startDate, endDate }),
+        body: JSON.stringify(sprintFormValuesToApiBody(values)),
       });
       const data = await res.json();
 
       if (!res.ok) {
         setFormError(data.error ?? "Something went wrong");
-        setSaving(false);
         return;
       }
 
@@ -86,8 +98,6 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
       router.refresh();
     } catch {
       setFormError("Can't reach the server. Try again.");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -189,19 +199,20 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
         title={formSprint === "new" ? "New sprint" : "Edit sprint"}
         widthClassName="max-w-[420px]"
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="sprint-name" className="text-[13px] font-medium text-text">
               Name <span className="text-danger">*</span>
             </label>
             <input
               id="sprint-name"
-              required
               placeholder="e.g. Sprint 27"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+              {...register("name")}
+              className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                errors.name ? "border-danger focus-visible:border-danger" : "border-border"
+              }`}
             />
+            {errors.name && <p className="text-[13px] text-danger">{errors.name.message}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -211,11 +222,12 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
               <input
                 id="sprint-start"
                 type="date"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+                {...register("startDate")}
+                className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                  errors.startDate ? "border-danger focus-visible:border-danger" : "border-border"
+                }`}
               />
+              {errors.startDate && <p className="text-[13px] text-danger">{errors.startDate.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="sprint-end" className="text-[13px] font-medium text-text">
@@ -224,11 +236,12 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
               <input
                 id="sprint-end"
                 type="date"
-                required
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+                {...register("endDate")}
+                className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                  errors.endDate ? "border-danger focus-visible:border-danger" : "border-border"
+                }`}
               />
+              {errors.endDate && <p className="text-[13px] text-danger">{errors.endDate.message}</p>}
             </div>
           </div>
           {formError && <p className="text-[13px] text-danger">{formError}</p>}
@@ -242,7 +255,7 @@ export function SprintsClient({ initialSprints }: { initialSprints: Sprint[] }) 
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={isSubmitting}
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
             >
               Save

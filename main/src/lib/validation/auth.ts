@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../password";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../temp-password";
 
 export const passwordSchema = z
   .string()

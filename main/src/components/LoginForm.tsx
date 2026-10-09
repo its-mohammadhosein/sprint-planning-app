@@ -1,44 +1,49 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  async function onSubmit(values: LoginInput) {
+    setFormError(null);
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(values),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Invalid email or password");
-        setSubmitting(false);
+        setFormError(data.error ?? "Invalid email or password");
         return;
       }
 
       router.push(nextPath);
       router.refresh();
     } catch {
-      setError("Can't reach the server. Try again.");
-      setSubmitting(false);
+      setFormError("Can't reach the server. Try again.");
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-[13px] font-medium">
           Email
@@ -47,9 +52,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           id="email"
           type="email"
           autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          {...register("email")}
           className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
         />
       </div>
@@ -62,19 +65,17 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           id="password"
           type="password"
           autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          {...register("password")}
           className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
         />
       </div>
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={isSubmitting}
         className="mt-1 flex h-10 items-center justify-center rounded-md bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
-        {submitting ? (
+        {isSubmitting ? (
           <span
             aria-hidden="true"
             className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
@@ -84,9 +85,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         )}
       </button>
 
-      {error && (
+      {formError && (
         <p role="alert" className="text-[13px] text-danger">
-          {error}
+          {formError}
         </p>
       )}
     </form>

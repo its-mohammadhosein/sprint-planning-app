@@ -52,10 +52,19 @@ Keep the app runnable after each step.
    - [x] Verified against the running app: create/edit/delete for all three resources, duplicate-name rejection (409), sprint end-before-start rejection (400), all three admin pages server-render real data.
    - Note: `/`, `/403` now use the shared `AppShell`; `SignOutButton` was removed (superseded by `AppShell`'s `UserMenu`). See `main/DECISIONS.md` for the self-delete guard and other small decisions.
 
-4. **Sprint view + Backlog view**
-   - Task table (TanStack Table): Title, Team, Assignee, ST, Priority; filters (team, assignee, priority, search) reflected in URL query string; sortable; summary bar (totals + ST per team).
-   - Create/edit/delete task, move to Backlog, move to sprint (single + multi-select).
-   - `/api/tasks`, `/api/tasks/:id`, `/api/tasks/move`, `/api/sprints`, `/api/teams`, `/api/users`.
+4. **Sprint view + Backlog view** — done
+   - [x] `/sprints/[id]` (incl. `/sprints/current` resolving to today's sprint or the latest, falling back to `/backlog` if no sprints exist) and `/backlog`, sharing one `TaskBoard` component (DESIGN.md's "same component, different data source" instruction) built from `TaskTable` (TanStack Table v8), `TaskFilters`, `SummaryBar`, `BulkActionBar`, `TaskForm`, `MoveToSprintDialog`.
+   - [x] Task table: Title (expandable description row), Team, Assignee, ST (tabular-nums, right-aligned), Priority — all sortable; checkbox selection; row menu (Edit / Move to sprint… / Move to Backlog / Delete).
+   - [x] Filters (team, assignee incl. "Unassigned", priority, debounced title search) synced to the URL query string via `router.replace`, so views are shareable; "Clear" link.
+   - [x] Summary bar: task count + total ST for the *current filters*, plus ST-per-team for the *whole sprint/backlog* (unfiltered), per spec.
+   - [x] Quick-edit: double-click ST/Priority/Assignee to edit inline (Enter/blur saves, Esc cancels), optimistic update with rollback + Retry toast on failure.
+   - [x] Create/edit (dialog, team-filtered assignee list + "show all teams"), delete (single + bulk confirm), move to Backlog (single + bulk), move to sprint (dialog, radio list, current location disabled "Already here").
+   - [x] Empty states ("No tasks in this sprint yet." / "The backlog is empty..." / "No tasks match your filters." + Clear filters) and the `N`/`/`/`Esc` keyboard hints, matching the prototype copy exactly.
+   - [x] `/api/tasks` (GET w/ filters, POST), `/api/tasks/:id` (PATCH, DELETE), `/api/tasks/move`, plus the public (non-admin) `/api/sprints`, `/api/teams`, `/api/users` read endpoints from README section 7.
+   - [x] Verified end-to-end against the running app: create/quick-update/move/delete via the API, filter query params, ST-per-team math cross-checked against a raw SQL query, non-admin members can create/edit tasks per the permissions table, 404 for a nonexistent sprint.
+   - Note: Import from Excel / Export Jira CSV buttons are intentionally **not** in the Sprint view header yet — they belong to steps 5/6; adding non-functional buttons now would be a half-finished UI. See `main/DECISIONS.md`.
+   - Note: `@tanstack/react-table`'s `latest` tag resolved to a breaking v9 rewrite (same trap as Prisma/pnpm earlier) — pinned to stable `8.21.3`.
+   - Note: all forms in the app (including this step's `TaskForm`) were migrated to **react-hook-form** + Zod resolvers per the user's standing instruction; see `main/DECISIONS.md`.
 
 5. **Excel import**
    - `src/lib/import-excel.ts` using `exceljs`.

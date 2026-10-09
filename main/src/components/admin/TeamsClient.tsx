@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog } from "@/components/Dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RowMenu } from "@/components/RowMenu";
 import { useToast } from "@/components/ToastProvider";
+import { createTeamSchema, type CreateTeamInput } from "@/lib/validation/admin";
 
 type Team = { id: number; name: string; userCount: number; taskCount: number };
 
@@ -14,29 +17,37 @@ export function TeamsClient({ initialTeams }: { initialTeams: Team[] }) {
   const { showToast } = useToast();
 
   const [formTeam, setFormTeam] = useState<Team | "new" | null>(null);
-  const [name, setName] = useState("");
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
   const [blockedDelete, setBlockedDelete] = useState<{ name: string; message: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  function openCreate() {
-    setName("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateTeamInput>({
+    resolver: zodResolver(createTeamSchema),
+    defaultValues: { name: "" },
+  });
+
+  useEffect(() => {
+    if (formTeam === null) return;
+    reset({ name: formTeam === "new" ? "" : formTeam.name });
     setFormError(null);
+  }, [formTeam, reset]);
+
+  function openCreate() {
     setFormTeam("new");
   }
 
   function openEdit(team: Team) {
-    setName(team.name);
-    setFormError(null);
     setFormTeam(team);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
+  async function onSubmit(values: CreateTeamInput) {
     setFormError(null);
 
     const isNew = formTeam === "new";
@@ -46,13 +57,12 @@ export function TeamsClient({ initialTeams }: { initialTeams: Team[] }) {
       const res = await fetch(url, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(values),
       });
       const data = await res.json();
 
       if (!res.ok) {
         setFormError(data.error ?? "Something went wrong");
-        setSaving(false);
         return;
       }
 
@@ -61,8 +71,6 @@ export function TeamsClient({ initialTeams }: { initialTeams: Team[] }) {
       router.refresh();
     } catch {
       setFormError("Can't reach the server. Try again.");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -156,18 +164,19 @@ export function TeamsClient({ initialTeams }: { initialTeams: Team[] }) {
         title={formTeam === "new" ? "New team" : "Edit team"}
         widthClassName="max-w-[420px]"
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="team-name" className="text-[13px] font-medium text-text">
               Name <span className="text-danger">*</span>
             </label>
             <input
               id="team-name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+              {...register("name")}
+              className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                errors.name ? "border-danger focus-visible:border-danger" : "border-border"
+              }`}
             />
+            {errors.name && <p className="text-[13px] text-danger">{errors.name.message}</p>}
           </div>
           {formError && <p className="text-[13px] text-danger">{formError}</p>}
           <div className="flex justify-end gap-2">
@@ -180,7 +189,7 @@ export function TeamsClient({ initialTeams }: { initialTeams: Team[] }) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={isSubmitting}
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
             >
               Save

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog } from "@/components/Dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RowMenu } from "@/components/RowMenu";
 import { useToast } from "@/components/ToastProvider";
 import { generateTempPassword } from "@/lib/temp-password";
+import { userFormSchema, userFormValuesToApiBody, type UserFormValues } from "@/lib/validation/admin";
 
 type Team = { id: number; name: string };
 type Role = "admin" | "member";
@@ -21,17 +24,8 @@ type User = {
   team: Team | null;
 };
 
-type FormState = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  jiraUsername: string;
-  teamId: string;
-  role: Role;
-  password: string;
-};
-
-const EMPTY_FORM: FormState = {
+const EMPTY_FORM: UserFormValues = {
+  mode: "create",
   firstName: "",
   lastName: "",
   email: "",
@@ -54,8 +48,6 @@ export function UsersClient({
   const { showToast } = useToast();
 
   const [editTarget, setEditTarget] = useState<User | "new" | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -65,54 +57,59 @@ export function UsersClient({
   const [resetting, setResetting] = useState(false);
   const [revealedPassword, setRevealedPassword] = useState<{ name: string; password: string } | null>(null);
 
-  function openCreate() {
-    setForm({ ...EMPTY_FORM, password: generateTempPassword() });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<UserFormValues>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: EMPTY_FORM,
+  });
+
+  useEffect(() => {
+    if (editTarget === null) return;
+    reset(
+      editTarget === "new"
+        ? { ...EMPTY_FORM, password: generateTempPassword() }
+        : {
+            mode: "edit",
+            firstName: editTarget.firstName,
+            lastName: editTarget.lastName,
+            email: editTarget.email,
+            jiraUsername: editTarget.jiraUsername ?? "",
+            teamId: editTarget.teamId ? String(editTarget.teamId) : "",
+            role: editTarget.role,
+            password: "",
+          }
+    );
     setFormError(null);
+  }, [editTarget, reset]);
+
+  function openCreate() {
     setEditTarget("new");
   }
 
   function openEdit(user: User) {
-    setForm({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      jiraUsername: user.jiraUsername ?? "",
-      teamId: user.teamId ? String(user.teamId) : "",
-      role: user.role,
-      password: "",
-    });
-    setFormError(null);
     setEditTarget(user);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
+  async function onSubmit(values: UserFormValues) {
     setFormError(null);
 
     const isNew = editTarget === "new";
     const url = isNew ? "/api/admin/users" : `/api/admin/users/${(editTarget as User).id}`;
-    const body: Record<string, unknown> = {
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      jiraUsername: form.jiraUsername || null,
-      teamId: form.teamId ? Number(form.teamId) : null,
-      role: form.role,
-    };
-    if (isNew) body.password = form.password;
 
     try {
       const res = await fetch(url, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(userFormValuesToApiBody(values)),
       });
       const data = await res.json();
 
       if (!res.ok) {
         setFormError(data.error ?? "Something went wrong");
-        setSaving(false);
         return;
       }
 
@@ -121,8 +118,6 @@ export function UsersClient({
       router.refresh();
     } catch {
       setFormError("Can't reach the server. Try again.");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -255,7 +250,8 @@ export function UsersClient({
         onClose={() => setEditTarget(null)}
         title={editTarget === "new" ? "New user" : "Edit user"}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <input type="hidden" {...register("mode")} />
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="user-first" className="text-[13px] font-medium text-text">
@@ -263,11 +259,12 @@ export function UsersClient({
               </label>
               <input
                 id="user-first"
-                required
-                value={form.firstName}
-                onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+                {...register("firstName")}
+                className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                  errors.firstName ? "border-danger focus-visible:border-danger" : "border-border"
+                }`}
               />
+              {errors.firstName && <p className="text-[13px] text-danger">{errors.firstName.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="user-last" className="text-[13px] font-medium text-text">
@@ -275,11 +272,12 @@ export function UsersClient({
               </label>
               <input
                 id="user-last"
-                required
-                value={form.lastName}
-                onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+                {...register("lastName")}
+                className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                  errors.lastName ? "border-danger focus-visible:border-danger" : "border-border"
+                }`}
               />
+              {errors.lastName && <p className="text-[13px] text-danger">{errors.lastName.message}</p>}
             </div>
           </div>
 
@@ -290,11 +288,12 @@ export function UsersClient({
             <input
               id="user-email"
               type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
+              {...register("email")}
+              className={`h-10 rounded-md border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary ${
+                errors.email ? "border-danger focus-visible:border-danger" : "border-border"
+              }`}
             />
+            {errors.email && <p className="text-[13px] text-danger">{errors.email.message}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -303,8 +302,7 @@ export function UsersClient({
             </label>
             <input
               id="user-jira"
-              value={form.jiraUsername}
-              onChange={(e) => setForm((f) => ({ ...f, jiraUsername: e.target.value }))}
+              {...register("jiraUsername")}
               className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
             />
             <p className="text-xs text-muted">Needed so the Jira CSV can match this person as assignee.</p>
@@ -317,8 +315,7 @@ export function UsersClient({
               </label>
               <select
                 id="user-team"
-                value={form.teamId}
-                onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value }))}
+                {...register("teamId")}
                 className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
               >
                 <option value="">No team</option>
@@ -335,8 +332,7 @@ export function UsersClient({
               </label>
               <select
                 id="user-role"
-                value={form.role}
-                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))}
+                {...register("role")}
                 className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:border-primary"
               >
                 <option value="member">Member</option>
@@ -352,14 +348,16 @@ export function UsersClient({
               </label>
               <input
                 id="user-password"
-                required
-                minLength={8}
-                maxLength={72}
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                className="h-10 rounded-md border border-border bg-surface px-3 font-mono text-sm text-text outline-none focus-visible:border-primary"
+                {...register("password")}
+                className={`h-10 rounded-md border bg-surface px-3 font-mono text-sm text-text outline-none focus-visible:border-primary ${
+                  errors.password ? "border-danger focus-visible:border-danger" : "border-border"
+                }`}
               />
-              <p className="text-xs text-muted">8-72 characters. Share it with the user securely.</p>
+              {errors.password ? (
+                <p className="text-[13px] text-danger">{errors.password.message}</p>
+              ) : (
+                <p className="text-xs text-muted">8-72 characters. Share it with the user securely.</p>
+              )}
             </div>
           )}
 
@@ -375,7 +373,7 @@ export function UsersClient({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={isSubmitting}
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
             >
               Save
