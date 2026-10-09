@@ -180,7 +180,7 @@ export function TaskBoard({
           <button
             type="button"
             onClick={openCreate}
-            className="flex-none rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+            className="btn-press flex-none rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
           >
             + New task
           </button>
@@ -222,7 +222,7 @@ export function TaskBoard({
                 <button
                   type="button"
                   onClick={() => router.replace(basePath, { scroll: false })}
-                  className="text-sm font-medium text-primary hover:text-primary-hover"
+                  className="btn-press text-sm font-medium text-primary transition-colors hover:text-primary-hover"
                 >
                   Clear filters
                 </button>

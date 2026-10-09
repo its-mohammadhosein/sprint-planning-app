@@ -45,6 +45,9 @@
 
   --topbar-height: 56px;
   --table-row-height: 40px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @theme inline {
@@ -117,4 +120,84 @@ a:hover {
 
 .tabular-nums {
   font-feature-settings: "tnum";
+}
+
+.btn-press {
+  transition: transform 150ms var(--ease-out);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+.popover-panel {
+  transition: transform 150ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+
+.popover-panel[data-state="closed"] {
+  transform: scale(0.95);
+  opacity: 0;
+  transition-duration: 100ms;
+}
+
+.dialog-backdrop {
+  transition: opacity 180ms var(--ease-out);
+}
+
+.dialog-backdrop[data-state="closed"] {
+  opacity: 0;
+  transition-duration: 120ms;
+}
+
+.dialog-panel {
+  transition: transform 180ms var(--ease-out), opacity 180ms var(--ease-out);
+}
+
+.dialog-panel[data-state="closed"] {
+  transform: scale(0.96);
+  opacity: 0;
+  transition-duration: 120ms;
+}
+
+.bar-panel {
+  transform: translateX(-50%) translateY(0);
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+
+.bar-panel[data-state="closed"] {
+  transform: translateX(-50%) translateY(8px);
+  opacity: 0;
+  transition-duration: 120ms;
+}
+
+.toast-panel {
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+
+.toast-panel[data-state="closed"] {
+  transform: translateX(16px);
+  opacity: 0;
+  transition-duration: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-press,
+  .popover-panel,
+  .dialog-backdrop,
+  .dialog-panel,
+  .bar-panel,
+  .toast-panel {
+    transition-property: opacity;
+  }
+
+  .btn-press:active {
+    transform: none;
+  }
+
+  .popover-panel[data-state="closed"],
+  .dialog-panel[data-state="closed"],
+  .bar-panel[data-state="closed"],
+  .toast-panel[data-state="closed"] {
+    transform: none;
+  }
 }

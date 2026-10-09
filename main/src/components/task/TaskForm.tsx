@@ -228,7 +228,7 @@ export function TaskForm({
                   key={opt.value}
                   type="button"
                   onClick={() => setValue("priority", opt.value)}
-                  className={`flex-1 px-2 py-2 text-[13px] ${i > 0 ? "border-l border-border" : ""} ${
+                  className={`flex-1 px-2 py-2 text-[13px] transition-colors ${i > 0 ? "border-l border-border" : ""} ${
                     priority === opt.value ? "font-semibold" : "font-normal text-text-secondary"
                   }`}
                   style={
@@ -264,14 +264,14 @@ export function TaskForm({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:bg-surface-muted"
+            className="btn-press rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-muted"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+            className="btn-press rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             Save
           </button>

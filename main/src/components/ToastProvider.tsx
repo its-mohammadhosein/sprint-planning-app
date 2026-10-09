@@ -16,7 +16,10 @@ type Toast = {
   message: string;
   kind: ToastKind;
   action?: { label: string; onClick: () => void };
+  state: "open" | "closed";
 };
+
+const TOAST_EXIT_DURATION_MS = 150;
 
 type ToastInput = {
   message: string;
@@ -43,13 +46,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const nextId = useRef(1);
 
   const dropToast = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, state: "closed" } : t)));
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, TOAST_EXIT_DURATION_MS);
   }, []);
 
   const showToast = useCallback(
     ({ message, kind = "success", action, duration = 4000 }: ToastInput) => {
       const id = nextId.current++;
-      setToasts((prev) => [...prev, { id, message, kind, action }]);
+      setToasts((prev) => [...prev, { id, message, kind, action, state: "closed" }]);
+      requestAnimationFrame(() => {
+        setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, state: "open" } : t)));
+      });
       if (duration > 0) {
         setTimeout(() => dropToast(id), duration);
       }
@@ -60,12 +69,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+      <div className="pointer-events-none fixed bottom-4 right-4 z-100 flex flex-col gap-2">
         {toasts.map((t) => (
           <div
             key={t.id}
             role="alert"
-            className="pointer-events-auto flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-sm text-text shadow-lg"
+            data-state={t.state}
+            className="toast-panel pointer-events-auto flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-sm text-text shadow-lg"
           >
             <span
               aria-hidden="true"
@@ -83,7 +93,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   dropToast(t.id);
                   t.action?.onClick();
                 }}
-                className="font-medium text-primary hover:text-primary-hover"
+                className="btn-press font-medium text-primary transition-colors hover:text-primary-hover"
               >
                 {t.action.label}
               </button>
@@ -92,7 +102,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               aria-label="Dismiss"
               onClick={() => dropToast(t.id)}
-              className="ml-1 text-muted hover:text-text"
+              className="btn-press ml-1 text-muted transition-colors hover:text-text"
             >
               ✕
             </button>

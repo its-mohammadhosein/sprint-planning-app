@@ -73,7 +73,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-1 flex h-10 items-center justify-center rounded-md bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="btn-press mt-1 flex h-10 items-center justify-center rounded-md bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isSubmitting ? (
           <span
