@@ -10,6 +10,7 @@ import { TaskTable, type TableTask } from "./TaskTable";
 import { BulkActionBar } from "./BulkActionBar";
 import { TaskForm, type TaskFormTask } from "./TaskForm";
 import { MoveToSprintDialog } from "./MoveToSprintDialog";
+import { ImportDialog } from "./ImportDialog";
 
 type Team = { id: number; name: string };
 type User = { id: number; firstName: string; lastName: string; teamId: number | null };
@@ -51,8 +52,9 @@ export function TaskBoard({
   const [moveTaskIds, setMoveTaskIds] = useState<number[] | null>(null);
   const [deleteTaskIds, setDeleteTaskIds] = useState<number[] | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
-  const anyDialogOpen = formOpen || moveTaskIds !== null || deleteTaskIds !== null;
+  const anyDialogOpen = formOpen || moveTaskIds !== null || deleteTaskIds !== null || importOpen;
 
   function openCreate() {
     setFormTask(null);
@@ -177,6 +179,15 @@ export function TaskBoard({
           <div className="flex-1">
             <TaskFilters basePath={basePath} teams={teams} users={users} />
           </div>
+          {mode === "sprint" && (
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="btn-press flex-none rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-muted"
+            >
+              Import from Excel
+            </button>
+          )}
           <button
             type="button"
             onClick={openCreate}
@@ -264,6 +275,15 @@ export function TaskBoard({
         sprints={sprints}
         onMoved={() => setSelectedIds(new Set())}
       />
+
+      {mode === "sprint" && (
+        <ImportDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          sprints={sprints}
+          defaultSprintId={sprintId}
+        />
+      )}
 
       <ConfirmDialog
         open={deleteTaskIds !== null}
