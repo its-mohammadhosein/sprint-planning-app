@@ -37,6 +37,12 @@ Keep the app runnable after each step.
    - [x] Verified manually: login sets `sess:<id>` in Redis with TTL + `user_sessions:<id>` set, `/api/auth/me` returns the user, middleware redirects unauthenticated requests (307), wrong-Origin and missing-Origin requests are rejected (403), 5 failed logins trigger 429 rate limiting, logout clears the Redis session and cookie.
    - Note: disabled Next 16's `cacheComponents`/`partialPrefetching` experimental flags in `next.config.ts` — they require every dynamic read (cookies, searchParams) to be Suspense-wrapped or cached, which fights a fully session-gated app with no static-generation benefit. See `main/DECISIONS.md`.
 
+   **Deployed to Vercel (ahead of schedule, ongoing in parallel with the steps below):**
+   - [x] Fixed pnpm-ignores-postinstall-scripts build failure (`prisma generate` explicit in `build`, `pnpm.onlyBuiltDependencies` allow-list — see `main/DECISIONS.md`).
+   - [x] `build` script now runs `prisma migrate deploy` and a new idempotent `prisma/ensure-admin.ts` (creates a default admin only if the users table is empty) before `next build`, so every deploy self-provisions a working login without re-seeding sample data into production.
+   - [x] Production Postgres is hosted on Neon (plain connection string — avoids needing the Prisma Accelerate extension that Vercel's own Prisma Postgres integration would require); Redis via Vercel's Redis integration.
+   - [ ] User still needs to finish setting `DATABASE_URL`/`REDIS_URL`/`APP_ORIGIN` to real values in Vercel and confirm a successful deploy.
+
 3. **Admin CRUD**
    - `/admin/teams`, `/admin/users`, `/admin/sprints` pages + `/api/admin/*` routes (admin-only).
    - User create/edit/reset-password/delete must revoke sessions on role/password change.
