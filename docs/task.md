@@ -41,12 +41,16 @@ Keep the app runnable after each step.
    - [x] Fixed pnpm-ignores-postinstall-scripts build failure (`prisma generate` explicit in `build`, `pnpm.onlyBuiltDependencies` allow-list — see `main/DECISIONS.md`).
    - [x] `build` script now runs `prisma migrate deploy` and a new idempotent `prisma/ensure-admin.ts` (creates a default admin only if the users table is empty) before `next build`, so every deploy self-provisions a working login without re-seeding sample data into production.
    - [x] Production Postgres is hosted on Neon (plain connection string — avoids needing the Prisma Accelerate extension that Vercel's own Prisma Postgres integration would require); Redis via Vercel's Redis integration.
-   - [ ] User still needs to finish setting `DATABASE_URL`/`REDIS_URL`/`APP_ORIGIN` to real values in Vercel and confirm a successful deploy.
+   - [x] App ended up fully deployed on **Render.com** instead (web service + Postgres + Redis, all managed there) rather than Vercel — user's choice after working through the Vercel pnpm/Prisma issues above. Those fixes (explicit `prisma generate`/`migrate deploy` in the build, `pnpm.onlyBuiltDependencies`) are host-agnostic and still apply.
 
-3. **Admin CRUD**
-   - `/admin/teams`, `/admin/users`, `/admin/sprints` pages + `/api/admin/*` routes (admin-only).
-   - User create/edit/reset-password/delete must revoke sessions on role/password change.
-   - Block deleting a team with existing tasks.
+3. **Admin CRUD** — done
+   - [x] `/admin/teams`, `/admin/users`, `/admin/sprints` pages (all via new shared `AppShell` top-bar nav + `Dialog`/`ConfirmDialog`/`RowMenu`/`ToastProvider` components) + `/api/admin/teams`, `/api/admin/users` (incl. `/:id/reset-password`), `/api/admin/sprints` routes (admin-only, Zod-validated).
+   - [x] User create (temp password, auto-generated + editable, matches prototype), edit, reset-password (new temp password revealed once in a dialog), delete.
+   - [x] Role changes and password resets revoke all of that user's sessions (`destroyAllUserSessions`) — verified: old session returns 401 immediately after an admin changes the user's role.
+   - [x] Deleting a team with tasks is blocked with the exact prototype copy ("This team still has N tasks..."); deleting a sprint moves its tasks to Backlog (`ON DELETE SET NULL`, already in the schema).
+   - [x] Non-admins get 403 from `/api/admin/*` and are redirected to `/403` from `/admin/*` pages (verified with a member-role session).
+   - [x] Verified against the running app: create/edit/delete for all three resources, duplicate-name rejection (409), sprint end-before-start rejection (400), all three admin pages server-render real data.
+   - Note: `/`, `/403` now use the shared `AppShell`; `SignOutButton` was removed (superseded by `AppShell`'s `UserMenu`). See `main/DECISIONS.md` for the self-delete guard and other small decisions.
 
 4. **Sprint view + Backlog view**
    - Task table (TanStack Table): Title, Team, Assignee, ST, Priority; filters (team, assignee, priority, search) reflected in URL query string; sortable; summary bar (totals + ST per team).

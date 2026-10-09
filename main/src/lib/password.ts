@@ -1,5 +1,7 @@
 import bcrypt from "bcrypt";
 
+export { generateTempPassword } from "./temp-password";
+
 const BCRYPT_COST = Number(process.env.BCRYPT_COST ?? 12);
 
 export const PASSWORD_MIN_LENGTH = 8;
