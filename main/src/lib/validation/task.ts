@@ -13,6 +13,7 @@ export const createTaskSchema = z.object({
   storyPoints: z.union([z.number().min(0).max(999.9), z.null()]).optional(),
   priority: taskPrioritySchema.default("medium"),
   sprintId: z.union([z.number().int().positive(), z.null()]).optional(),
+  epicId: z.union([z.number().int().positive(), z.null()]).optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
@@ -37,6 +38,7 @@ export const taskFormSchema = z.object({
   storyPoints: z.string(),
   priority: taskPrioritySchema,
   sprintId: z.string(),
+  epicId: z.string(),
 });
 
 export type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -50,6 +52,7 @@ export function taskFormValuesToApiBody(values: TaskFormValues) {
     storyPoints: values.storyPoints === "" ? null : Number(values.storyPoints),
     priority: values.priority,
     sprintId: values.sprintId ? Number(values.sprintId) : null,
+    epicId: values.epicId ? Number(values.epicId) : null,
   };
 }
 
@@ -58,5 +61,6 @@ export const taskListQuerySchema = z.object({
   teamId: z.coerce.number().int().positive().optional(),
   assigneeId: z.union([z.literal("none"), z.coerce.number().int().positive()]).optional(),
   priority: taskPrioritySchema.optional(),
+  epicId: z.union([z.literal("none"), z.coerce.number().int().positive()]).optional(),
   q: z.string().trim().optional(),
 });

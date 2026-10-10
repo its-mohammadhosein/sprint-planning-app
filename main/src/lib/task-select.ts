@@ -9,8 +9,10 @@ export const TASK_SELECT = {
   assigneeId: true,
   teamId: true,
   sprintId: true,
+  epicId: true,
   createdAt: true,
   updatedAt: true,
   team: { select: { id: true, name: true } },
   assignee: { select: { id: true, firstName: true, lastName: true } },
+  epic: { select: { id: true, name: true } },
 } satisfies Prisma.TaskSelect;

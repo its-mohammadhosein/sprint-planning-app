@@ -9,6 +9,7 @@ const ADMIN_LINKS = [
   { href: "/admin/teams", label: "Teams" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/sprints", label: "Sprints" },
+  { href: "/admin/epics", label: "Epics" },
 ];
 
 export function AdminNavDropdown({ active }: { active: boolean }) {

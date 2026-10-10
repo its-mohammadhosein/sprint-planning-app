@@ -26,6 +26,7 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(body.storyPoints !== undefined && { storyPoints: body.storyPoints }),
         ...(body.priority !== undefined && { priority: body.priority }),
         ...(body.sprintId !== undefined && { sprintId: body.sprintId }),
+        ...(body.epicId !== undefined && { epicId: body.epicId }),
       },
       select: TASK_SELECT,
     });

@@ -15,6 +15,7 @@ import { ImportDialog } from "./ImportDialog";
 type Team = { id: number; name: string };
 type User = { id: number; firstName: string; lastName: string; teamId: number | null };
 type Sprint = { id: number; name: string; startDate: string; endDate: string };
+type Epic = { id: number; name: string };
 
 export function TaskBoard({
   mode,
@@ -25,6 +26,7 @@ export function TaskBoard({
   teams,
   users,
   sprints,
+  epics,
   basePath,
 }: {
   mode: "sprint" | "backlog";
@@ -35,6 +37,7 @@ export function TaskBoard({
   teams: Team[];
   users: User[];
   sprints: Sprint[];
+  epics: Epic[];
   basePath: string;
 }) {
   const router = useRouter();
@@ -88,6 +91,7 @@ export function TaskBoard({
       storyPoints: task.storyPoints,
       priority: task.priority,
       sprintId: task.sprintId,
+      epicId: task.epicId,
     });
     setFormOpen(true);
   }
@@ -177,7 +181,7 @@ export function TaskBoard({
         <SummaryBar taskCount={tasks.length} totalST={filteredTotalST} teamBreakdown={teamBreakdown} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex-1">
-            <TaskFilters basePath={basePath} teams={teams} users={users} />
+            <TaskFilters basePath={basePath} teams={teams} users={users} epics={epics} />
           </div>
           {mode === "sprint" && (
             <button
@@ -264,6 +268,7 @@ export function TaskBoard({
         teams={teams}
         users={users}
         sprints={sprints}
+        epics={epics}
         defaultSprintId={sprintId}
       />
 

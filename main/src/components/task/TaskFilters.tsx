@@ -8,16 +8,19 @@ export type TaskFiltersValue = {
   teamId: string;
   assigneeId: string;
   priority: string;
+  epicId: string;
 };
 
 export function TaskFilters({
   basePath,
   teams,
   users,
+  epics,
 }: {
   basePath: string;
   teams: { id: number; name: string }[];
   users: { id: number; firstName: string; lastName: string }[];
+  epics: { id: number; name: string }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,8 +32,9 @@ export function TaskFilters({
   const teamId = searchParams.get("teamId") ?? "";
   const assigneeId = searchParams.get("assigneeId") ?? "";
   const priority = searchParams.get("priority") ?? "";
+  const epicId = searchParams.get("epicId") ?? "";
 
-  const hasFilters = Boolean(q || teamId || assigneeId || priority);
+  const hasFilters = Boolean(q || teamId || assigneeId || priority || epicId);
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -124,6 +128,22 @@ export function TaskFilters({
         <option value="low">Low</option>
         <option value="medium">Medium</option>
         <option value="high">High</option>
+      </select>
+
+      <select
+        aria-label="Filter by epic"
+        value={epicId}
+        onChange={(e) => updateParam("epicId", e.target.value)}
+        className={selectClass}
+        style={epicId ? { borderColor: "#2563EB", backgroundColor: "#EFF6FF" } : undefined}
+      >
+        <option value="">All epics</option>
+        <option value="none">No epic</option>
+        {epics.map((e) => (
+          <option key={e.id} value={e.id}>
+            {e.name}
+          </option>
+        ))}
       </select>
 
       {hasFilters && (

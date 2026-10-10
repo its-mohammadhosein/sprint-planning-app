@@ -22,8 +22,10 @@ export type TableTask = {
   assigneeId: number | null;
   teamId: number;
   sprintId: number | null;
+  epicId: number | null;
   team: { id: number; name: string };
   assignee: { id: number; firstName: string; lastName: string } | null;
+  epic: { id: number; name: string } | null;
 };
 
 type Team = { id: number; name: string };
@@ -113,6 +115,14 @@ export function TaskTable({
         id: "team",
         header: "Team",
         cell: ({ row }) => row.original.team.name,
+      }),
+      columnHelper.accessor((t) => t.epic?.name ?? "", {
+        id: "epic",
+        header: "Epic",
+        cell: ({ row }) => {
+          const epic = row.original.epic;
+          return epic ? <span className="text-text">{epic.name}</span> : <span className="text-muted">—</span>;
+        },
       }),
       columnHelper.accessor(
         (t) => (t.assignee ? `${t.assignee.firstName} ${t.assignee.lastName}` : ""),

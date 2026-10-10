@@ -54,9 +54,11 @@ export default async function SprintViewPage({
   if (query.assigneeId === "none") where.assigneeId = null;
   else if (query.assigneeId !== undefined) where.assigneeId = query.assigneeId;
   if (query.priority) where.priority = query.priority;
+  if (query.epicId === "none") where.epicId = null;
+  else if (query.epicId !== undefined) where.epicId = query.epicId;
   if (query.q) where.title = { contains: query.q, mode: "insensitive" };
 
-  const [tasks, totalTaskCountUnfiltered, teamTotals, teams, users] = await Promise.all([
+  const [tasks, totalTaskCountUnfiltered, teamTotals, teams, users, epics] = await Promise.all([
     prisma.task.findMany({ where, select: TASK_SELECT, orderBy: { createdAt: "desc" } }),
     prisma.task.count({ where: { sprintId } }),
     prisma.task.groupBy({
@@ -66,6 +68,7 @@ export default async function SprintViewPage({
     }),
     prisma.team.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findMany({ orderBy: [{ firstName: "asc" }, { lastName: "asc" }] }),
+    prisma.epic.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   const teamBreakdown = teamTotals
@@ -105,6 +108,7 @@ export default async function SprintViewPage({
           teams={teams}
           users={users}
           sprints={sprintsForClient}
+          epics={epics}
           basePath={`/sprints/${sprintId}`}
         />
       </div>

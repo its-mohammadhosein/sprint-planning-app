@@ -90,6 +90,11 @@ async function main() {
   }
   const [sprint1, sprint2, sprint3] = sprints;
 
+  const epicNames = ["Onboarding revamp", "Reporting v2", "Platform hardening"];
+  const epics = await Promise.all(
+    epicNames.map((name) => prisma.epic.upsert({ where: { name }, update: {}, create: { name } }))
+  );
+
   const priorities: TaskPriority[] = ["low", "medium", "high"];
   const allTeams = [frontend, backend, pc, security];
 
@@ -131,6 +136,7 @@ async function main() {
     const assignee = users[i % users.length];
     const priority = priorities[i % priorities.length];
     const sprint = i % 5 === 0 ? null : [sprint1, sprint2, sprint3][i % 3];
+    const epic = i % 3 === 0 ? null : epics[i % epics.length];
 
     await prisma.task.create({
       data: {
@@ -141,11 +147,12 @@ async function main() {
         assigneeId: i % 7 === 0 ? null : assignee.id,
         teamId: team.id,
         sprintId: sprint?.id ?? null,
+        epicId: epic?.id ?? null,
       },
     });
   }
 
-  console.log(`Seeded: ${teams.length} teams, ${users.length + 1} users, ${sprints.length} sprints, ${taskTitles.length} tasks.`);
+  console.log(`Seeded: ${teams.length} teams, ${users.length + 1} users, ${sprints.length} sprints, ${epics.length} epics, ${taskTitles.length} tasks.`);
   console.log(`Admin login: ${adminEmail} / ${adminPassword}`);
   void admin;
 }

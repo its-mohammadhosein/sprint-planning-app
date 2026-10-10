@@ -9,6 +9,14 @@ export const createTeamSchema = z.object({
 
 export const updateTeamSchema = createTeamSchema;
 
+export const epicNameSchema = z.string().trim().min(1).max(100);
+
+export const createEpicSchema = z.object({
+  name: epicNameSchema,
+});
+
+export const updateEpicSchema = createEpicSchema;
+
 export const sprintSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
@@ -50,6 +58,7 @@ export const updateUserSchema = z.object({
 });
 
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
+export type CreateEpicInput = z.infer<typeof createEpicSchema>;
 
 /**
  * Client-side (react-hook-form) schema for the Sprint admin form. Keeps

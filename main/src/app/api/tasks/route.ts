@@ -25,6 +25,8 @@ export async function GET(request: Request) {
     if (query.assigneeId === "none") where.assigneeId = null;
     else if (query.assigneeId !== undefined) where.assigneeId = query.assigneeId;
     if (query.priority) where.priority = query.priority;
+    if (query.epicId === "none") where.epicId = null;
+    else if (query.epicId !== undefined) where.epicId = query.epicId;
     if (query.q) where.title = { contains: query.q, mode: "insensitive" };
 
     const tasks = await prisma.task.findMany({
@@ -54,6 +56,7 @@ export async function POST(request: Request) {
         storyPoints: body.storyPoints ?? null,
         priority: body.priority,
         sprintId: body.sprintId ?? null,
+        epicId: body.epicId ?? null,
       },
       select: TASK_SELECT,
     });

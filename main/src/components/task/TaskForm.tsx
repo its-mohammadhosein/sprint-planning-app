@@ -12,6 +12,7 @@ import { taskFormSchema, taskFormValuesToApiBody, type TaskFormValues } from "@/
 type Team = { id: number; name: string };
 type User = { id: number; firstName: string; lastName: string; teamId: number | null };
 type Sprint = { id: number; name: string };
+type Epic = { id: number; name: string };
 
 export type TaskFormTask = {
   id: number;
@@ -22,6 +23,7 @@ export type TaskFormTask = {
   storyPoints: number | null;
   priority: Priority;
   sprintId: number | null;
+  epicId: number | null;
 };
 
 function toFormValues(task: TaskFormTask | null, defaultSprintId: number | null): TaskFormValues {
@@ -34,6 +36,7 @@ function toFormValues(task: TaskFormTask | null, defaultSprintId: number | null)
       storyPoints: "",
       priority: "medium",
       sprintId: defaultSprintId ? String(defaultSprintId) : "",
+      epicId: "",
     };
   }
   return {
@@ -44,6 +47,7 @@ function toFormValues(task: TaskFormTask | null, defaultSprintId: number | null)
     storyPoints: task.storyPoints === null ? "" : String(task.storyPoints),
     priority: task.priority,
     sprintId: task.sprintId ? String(task.sprintId) : "",
+    epicId: task.epicId ? String(task.epicId) : "",
   };
 }
 
@@ -54,6 +58,7 @@ export function TaskForm({
   teams,
   users,
   sprints,
+  epics,
   defaultSprintId,
 }: {
   open: boolean;
@@ -63,6 +68,7 @@ export function TaskForm({
   teams: Team[];
   users: User[];
   sprints: Sprint[];
+  epics: Epic[];
   defaultSprintId: number | null;
 }) {
   const router = useRouter();
@@ -244,18 +250,33 @@ export function TaskForm({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="task-sprint" className="text-[13px] font-medium text-text">
-            Sprint
-          </label>
-          <select id="task-sprint" {...register("sprintId")} className={inputClass}>
-            <option value="">Backlog</option>
-            {sprints.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="task-sprint" className="text-[13px] font-medium text-text">
+              Sprint
+            </label>
+            <select id="task-sprint" {...register("sprintId")} className={inputClass}>
+              <option value="">Backlog</option>
+              {sprints.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="task-epic" className="text-[13px] font-medium text-text">
+              Epic
+            </label>
+            <select id="task-epic" {...register("epicId")} className={inputClass}>
+              <option value="">No epic</option>
+              {epics.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {formError && <p className="text-[13px] text-danger">{formError}</p>}
