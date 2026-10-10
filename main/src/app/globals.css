@@ -140,6 +140,18 @@ a:hover {
   transition-duration: 100ms;
 }
 
+/* Base UI's own open/close lifecycle (combobox popup), rather than our
+   hand-rolled data-state used by the other popovers above. */
+.combobox-panel {
+  transition: transform 150ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+
+.combobox-panel[data-starting-style],
+.combobox-panel[data-ending-style] {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
 .dialog-backdrop {
   transition: opacity 180ms var(--ease-out);
 }
@@ -183,6 +195,7 @@ a:hover {
 @media (prefers-reduced-motion: reduce) {
   .btn-press,
   .popover-panel,
+  .combobox-panel,
   .dialog-backdrop,
   .dialog-panel,
   .bar-panel,
@@ -195,6 +208,8 @@ a:hover {
   }
 
   .popover-panel[data-state="closed"],
+  .combobox-panel[data-starting-style],
+  .combobox-panel[data-ending-style],
   .dialog-panel[data-state="closed"],
   .bar-panel[data-state="closed"],
   .toast-panel[data-state="closed"] {

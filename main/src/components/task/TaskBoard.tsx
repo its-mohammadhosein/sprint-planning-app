@@ -86,12 +86,12 @@ export function TaskBoard({
       id: task.id,
       title: task.title,
       description: task.description,
-      teamId: task.teamId,
-      assigneeId: task.assigneeId,
+      team: task.team,
+      assignee: task.assignee,
       storyPoints: task.storyPoints,
       priority: task.priority,
       sprintId: task.sprintId,
-      epicId: task.epicId,
+      epic: task.epic,
     });
     setFormOpen(true);
   }
@@ -265,10 +265,7 @@ export function TaskBoard({
         open={formOpen}
         onClose={() => setFormOpen(false)}
         task={formTask}
-        teams={teams}
-        users={users}
         sprints={sprints}
-        epics={epics}
         defaultSprintId={sprintId}
       />
 

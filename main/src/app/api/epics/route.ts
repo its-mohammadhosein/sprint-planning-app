@@ -12,14 +12,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
 
-    const teams = await prisma.team.findMany({
+    const epics = await prisma.epic.findMany({
       where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
       take: RESULT_LIMIT,
     });
 
-    return NextResponse.json(teams);
+    return NextResponse.json(epics);
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -1,29 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog } from "@/components/Dialog";
 import { useToast } from "@/components/ToastProvider";
 import { PRIORITY_OPTIONS, PRIORITY_STYLES, type Priority } from "./PriorityBadge";
+import { SearchCombobox, type ComboboxOption } from "./SearchCombobox";
 import { taskFormSchema, taskFormValuesToApiBody, type TaskFormValues } from "@/lib/validation/task";
 
-type Team = { id: number; name: string };
-type User = { id: number; firstName: string; lastName: string; teamId: number | null };
 type Sprint = { id: number; name: string };
-type Epic = { id: number; name: string };
 
 export type TaskFormTask = {
   id: number;
   title: string;
   description: string | null;
-  teamId: number;
-  assigneeId: number | null;
+  team: { id: number; name: string };
+  assignee: { id: number; firstName: string; lastName: string } | null;
   storyPoints: number | null;
   priority: Priority;
   sprintId: number | null;
-  epicId: number | null;
+  epic: { id: number; name: string } | null;
 };
 
 function toFormValues(task: TaskFormTask | null, defaultSprintId: number | null): TaskFormValues {
@@ -42,39 +40,57 @@ function toFormValues(task: TaskFormTask | null, defaultSprintId: number | null)
   return {
     title: task.title,
     description: task.description ?? "",
-    teamId: String(task.teamId),
-    assigneeId: task.assigneeId ? String(task.assigneeId) : "",
+    teamId: String(task.team.id),
+    assigneeId: task.assignee ? String(task.assignee.id) : "",
     storyPoints: task.storyPoints === null ? "" : String(task.storyPoints),
     priority: task.priority,
     sprintId: task.sprintId ? String(task.sprintId) : "",
-    epicId: task.epicId ? String(task.epicId) : "",
+    epicId: task.epic ? String(task.epic.id) : "",
   };
+}
+
+function toComboboxOptions(task: TaskFormTask | null) {
+  return {
+    team: task ? { id: task.team.id, label: task.team.name } : null,
+    assignee: task?.assignee
+      ? { id: task.assignee.id, label: `${task.assignee.firstName} ${task.assignee.lastName}` }
+      : null,
+    epic: task?.epic ? { id: task.epic.id, label: task.epic.name } : null,
+  };
+}
+
+type TeamOrUserOrEpic = { id: number; name?: string; firstName?: string; lastName?: string };
+
+function mapTeamOrEpic(raw: TeamOrUserOrEpic): ComboboxOption {
+  return { id: raw.id, label: raw.name ?? "" };
+}
+
+function mapUser(raw: TeamOrUserOrEpic): ComboboxOption {
+  return { id: raw.id, label: `${raw.firstName ?? ""} ${raw.lastName ?? ""}`.trim() };
 }
 
 export function TaskForm({
   open,
   onClose,
   task,
-  teams,
-  users,
   sprints,
-  epics,
   defaultSprintId,
 }: {
   open: boolean;
   onClose: () => void;
   /** null = create a new task */
   task: TaskFormTask | null;
-  teams: Team[];
-  users: User[];
   sprints: Sprint[];
-  epics: Epic[];
   defaultSprintId: number | null;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [showAllTeams, setShowAllTeams] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [teamOption, setTeamOption] = useState<ComboboxOption | null>(null);
+  const [assigneeOption, setAssigneeOption] = useState<ComboboxOption | null>(null);
+  const [epicOption, setEpicOption] = useState<ComboboxOption | null>(null);
 
   const {
     register,
@@ -91,6 +107,10 @@ export function TaskForm({
   useEffect(() => {
     if (!open) return;
     reset(toFormValues(task, defaultSprintId));
+    const options = toComboboxOptions(task);
+    setTeamOption(options.team);
+    setAssigneeOption(options.assignee);
+    setEpicOption(options.epic);
     setShowAllTeams(false);
     setFormError(null);
   }, [open, task, defaultSprintId, reset]);
@@ -98,12 +118,22 @@ export function TaskForm({
   const teamId = watch("teamId");
   const priority = watch("priority");
 
-  const assigneeOptions = useMemo(() => {
-    if (showAllTeams || !teamId) return users;
-    const inTeam = users.filter((u) => String(u.teamId) === teamId);
-    const outsideTeam = users.filter((u) => String(u.teamId) !== teamId);
-    return [...inTeam, ...outsideTeam];
-  }, [users, teamId, showAllTeams]);
+  function handleTeamChange(option: ComboboxOption | null) {
+    setTeamOption(option);
+    setValue("teamId", option ? String(option.id) : "", { shouldValidate: true });
+    setAssigneeOption(null);
+    setValue("assigneeId", "");
+  }
+
+  function handleAssigneeChange(option: ComboboxOption | null) {
+    setAssigneeOption(option);
+    setValue("assigneeId", option ? String(option.id) : "");
+  }
+
+  function handleEpicChange(option: ComboboxOption | null) {
+    setEpicOption(option);
+    setValue("epicId", option ? String(option.id) : "");
+  }
 
   async function onSubmit(values: TaskFormValues) {
     setFormError(null);
@@ -173,34 +203,33 @@ export function TaskForm({
             <label htmlFor="task-team" className="text-[13px] font-medium text-text">
               Team <span className="text-danger">*</span>
             </label>
-            <select
+            <SearchCombobox
               id="task-team"
-              {...register("teamId", {
-                onChange: () => setValue("assigneeId", ""),
-              })}
-              className={`${inputClass} ${errors.teamId ? errorInputClass : ""}`}
-            >
-              <option value="">Select a team...</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
+              value={teamOption}
+              onChange={handleTeamChange}
+              endpoint="/api/teams"
+              mapItem={mapTeamOrEpic}
+              placeholder="Select a team..."
+              emptyLabel="No teams found."
+              clearable={false}
+              aria-invalid={!!errors.teamId}
+            />
             {errors.teamId && <p className="text-[13px] text-danger">{errors.teamId.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="task-assignee" className="text-[13px] font-medium text-text">
               Assignee
             </label>
-            <select id="task-assignee" {...register("assigneeId")} className={inputClass}>
-              <option value="">Unassigned</option>
-              {assigneeOptions.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.firstName} {u.lastName}
-                </option>
-              ))}
-            </select>
+            <SearchCombobox
+              id="task-assignee"
+              value={assigneeOption}
+              onChange={handleAssigneeChange}
+              endpoint="/api/users"
+              params={!showAllTeams && teamId ? { teamId } : undefined}
+              mapItem={mapUser}
+              placeholder="Unassigned"
+              emptyLabel="No matching people."
+            />
             <label className="flex items-center gap-1.5 text-[13px] text-muted">
               <input
                 type="checkbox"
@@ -268,14 +297,15 @@ export function TaskForm({
             <label htmlFor="task-epic" className="text-[13px] font-medium text-text">
               Epic
             </label>
-            <select id="task-epic" {...register("epicId")} className={inputClass}>
-              <option value="">No epic</option>
-              {epics.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
+            <SearchCombobox
+              id="task-epic"
+              value={epicOption}
+              onChange={handleEpicChange}
+              endpoint="/api/epics"
+              mapItem={mapTeamOrEpic}
+              placeholder="No epic"
+              emptyLabel="No epics found."
+            />
           </div>
         </div>
 
