@@ -261,9 +261,9 @@ export function TaskTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+    <div className="max-h-[calc(100vh-14rem)] overflow-auto rounded-lg border border-border bg-surface">
       <table className="w-full text-left text-sm">
-        <thead className="sticky top-14 z-[1] bg-surface">
+        <thead className="sticky top-0 z-[1] bg-surface">
           <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
             <th className="w-10 px-3 py-2">
               <input
